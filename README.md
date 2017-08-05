@@ -1,2 +1,0 @@
-# contrastive
-Contrastive PCA
