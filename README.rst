@@ -9,7 +9,7 @@ Installation
 
 .. code-block:: 
 
-	$ pip install contrastive
+	$ pip3 install contrastive
 
 Examples
 -------------------------------
