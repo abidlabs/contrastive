@@ -1,8 +1,8 @@
 contrastive
 ===================
-A python3 library for performing unsupervised machine learning on datasets with learning (e.g. PCA) in contrastive settings, where one is interested in patterns (e.g. clusters or clines) that exist one dataset, but not the other.
+A python library for performing unsupervised machine learning on datasets with learning (e.g. PCA) in contrastive settings, where one is interested in patterns (e.g. clusters or clines) that exist one dataset, but not the other.
 
-Applications include dicovering subgroups in biological and medical data.
+Applications include dicovering subgroups in biological and medical data. Here are basic installation and usage instructions, written for Python 3 (in which the library has been developed and tested, although it should work in Python 2 as well).
 
 Installation
 --------------------
@@ -24,6 +24,9 @@ The basic functions enabled by this library are shown below. Generally speaking,
 	projected_data, alphas = mdl.fit_transform(foreground_data, background_data)
 	
 	#returns a set of 2-dimensional projections of the foreground data stored in the list 'projected_data', for several different values of 'alpha' that are automatically chosen (by default, 4 values of alpha are chosen)
+
+.. image:: images/clusters.png
+
 
 Built-in plotting: to quickly see the results of PCA, simply enable the :code:`plot` parameter to true:
 
