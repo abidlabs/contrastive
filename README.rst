@@ -1,6 +1,6 @@
 contrastive
 ===================
-A python library for performing unsupervised machine learning on datasets with learning (e.g. PCA) in contrastive settings, where one is interested in patterns (e.g. clusters or clines) that exist one dataset, but not the other.
+A python3 library for performing unsupervised machine learning on datasets with learning (e.g. PCA) in contrastive settings, where one is interested in patterns (e.g. clusters or clines) that exist one dataset, but not the other.
 
 Applications include dicovering subgroups in biological and medical data.
 
@@ -9,7 +9,7 @@ Installation
 
 .. code-block:: 
 
-	$ pip install contrastive
+	$ pip3 install contrastive
 
 Examples
 -------------------------------
