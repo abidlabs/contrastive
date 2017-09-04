@@ -26,7 +26,7 @@ The basic functions enabled by this library are shown below. Generally speaking,
 	#returns a set of 2-dimensional projections of the foreground data stored in the list 'projected_data', for several different values of 'alpha' that are automatically chosen (by default, 4 values of alpha are chosen)
 
 
-Built-in plotting: to quickly see the results of contrastive PCA, simply enable the :code:`plot` parameter to true:
+**Built-in plotting**: to quickly see the results of contrastive PCA, simply enable the :code:`plot` parameter to true:
 
 .. code-block:: python
 
@@ -35,9 +35,10 @@ Built-in plotting: to quickly see the results of contrastive PCA, simply enable 
 	mdl = CPCA()
 	projected_data, alphas = mdl.fit_transform(foreground_data, background_data, plot=True)
 	
+
 .. image:: images/plot_true.png
 
-Interactive GUI: if you are running these analyses inside a jupyter notebook, you can easily launch an interactive GUI as shown here:
+**Interactive GUI**: if you are running these analyses inside a jupyter notebook, you can easily launch an interactive GUI as shown here:
 
 .. code-block:: python
 
@@ -46,11 +47,10 @@ Interactive GUI: if you are running these analyses inside a jupyter notebook, yo
 	mdl = CPCA()
 	projected_data, alphas = mdl.fit_transform(foreground_data, background_data, gui=True)
 	
+
 .. image:: images/gui_true.png
 
-Test
 
 Optional Parameters
 -------------------------------
 
-Test
