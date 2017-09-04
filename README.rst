@@ -89,6 +89,9 @@ To ensure that the library is working, here is a quick script that will allow yo
 	cpca = CPCA(standardize=False)
 	cpca.fit_transform(A, B, plot=True, active_labels=A_labels)
 
+You should see a series of plots that looks something like this:
+
+.. image:: images/plot_example.png
 
 Optional Parameters
 -------------------------------
@@ -104,6 +107,7 @@ Optional Parameters
 
 **Additional # of components**: Sometimes, you'd like to project your data on more than the top 2 contrastive principal components (cPCs). Specify the number of cPCs when you instantiate your model using the :code:`n_components` parameter:
 
+.. code-block:: python
 
 	from contrastive import CPCA
 
@@ -112,14 +116,51 @@ Optional Parameters
 
 However, note that only when :code:`n_components=2` can the data be plotted or visualized through the GUI.
 
-**How values of alpha are chosen**: So far, we've always plotted the data when the values of alpha have been chosen automatically.  
+**How values of alpha are chosen**: So far, we've always plotted the data when the values of alpha have been chosen automatically with default parameters. However, the values of alpha can be customized. For example, if you'd like to still choose the values of alpha automatically, but change the range or number of alphas considered, you can use the :code:`n_alphas` and :code:`max_log_alpha` parameters. The former sets the number of alphas that are analyzed, and the latter sets the upper bound on the highest value of log (base 10) alpha. (The minimum value of alpha, besides alpha = 0, is always alpha = 0.1). Finally, you can change the number of values of alpha that are returned using the :code:`n_alphas_to_return` parameter.
 
-**Whether to standardize your data**: By default, before performing contrastive PCA, the data are standardized so that each column or dimension
+.. code-block:: python
 
-**Custom colors (plot/gui mode)**: As a stylistic touch, you can also customize which colors are used to plot the data by using the :code:`colors` argument. Here's an example:
+	from contrastive import CPCA
 
+	mdl = CPCA()
+	projected_data = mdl.fit_transform(foreground_data, background_data, n_alphas=10,  max_log_alpha=2, n_alphas_to_return=1) #search through 10 logarithmically spaced values of alpha from 0.1 to 100 and return the PCs for only 1 of them.
 
+You can also decide to set the value of alpha to a particular value of alpha manually by changing the :code:`alpha_selection` and :code:`alpha_value` parameters as follows:
 
-produces this:
+.. code-block:: python
 
-.. image:: images/gui_true.png
+	from contrastive import CPCA
+
+	mdl = CPCA()
+	projected_data = mdl.fit_transform(foreground_data, background_data, alpha_selection='manual', alpha_value=2.0)
+
+Or you can decide to plot or return the data for _all_ values of alpha in the given range. In this case, you can still choose to set the :code:`n_alphas` and :code:`max_log_alpha` parameters:
+
+.. code-block:: python
+
+	from contrastive import CPCA
+
+	mdl = CPCA() #the top 3 components will be returned
+	projected_data = mdl.fit_transform(foreground_data, background_data, n_alphas=10,  max_log_alpha=2, alpha_selection='all') #search through 10 logarithmically spaced values of alpha from 0.1 to 100 and return the PCs for all of them!
+
+**Whether to standardize your data**: By default, before performing contrastive PCA, the data are standardized so that each column or dimension has unit variance. You can turn this off by doing the following:
+
+.. code-block:: python
+
+	from contrastive import CPCA
+
+	mdl = CPCA(standardize=False)
+	projected_data = mdl.fit_transform(foreground_data, background_data)
+
+**Custom colors (plot/gui mode)**: As a stylistic touch, you can also customize which colors are used to label the points when the data is plotted by using the :code:`colors` argument. Here's an example:
+
+.. code-block:: python
+
+	from contrastive import CPCA
+
+	mdl = CPCA(standardize=False)
+	projected_data = mdl.fit_transform(foreground_data, background_data, gui=True, colors=['r','b','k','c'])
+
+will produce something along the lines of:
+
+.. image:: images/gui_colors.png
