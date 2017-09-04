@@ -48,7 +48,9 @@ Interactive GUI: if you are running these analyses inside a jupyter notebook, yo
 	
 .. image:: images/gui_true.png
 
+Test
 
 Optional Parameters
 -------------------------------
 
+Test
