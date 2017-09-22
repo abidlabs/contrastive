@@ -153,13 +153,13 @@ class CPCA(object):
             try:
                 import matplotlib.pyplot as plt
                 from matplotlib.gridspec import GridSpec
-            except:
-                print("To use the plotting feature, you must download the 'matplotlib' package")
+            except ImportError:
+                raise ImportError("Something wrong while loading matplotlib.pyplot! You probably don't have plotting libraries installed.")
             try:
                 from ipywidgets import widgets, interact, Layout
                 from IPython.display import display
-            except:
-                print("To use the GUI, you must be running this code in a jupyter notebook that supports ipywidgets")
+            except ImportError:
+                raise ImportError("To use the GUI, you must be running this code in a jupyter notebook that supports ipywidgets")
 
             transformed_data_auto, alphas_auto = self.automated_cpca(dataset, n_alphas_to_return, n_alphas, max_log_alpha)
             transformed_data_manual, alphas_manual = self.all_cpca(dataset, n_alphas, max_log_alpha)

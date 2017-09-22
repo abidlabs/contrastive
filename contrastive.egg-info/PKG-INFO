@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: contrastive
-Version: 0.1.2
+Version: 0.1.4
 Summary: Python library for performing unsupervised learning (e.g. PCA) in contrastive settings, where one is interested in finding directions and patterns that exist one dataset, but not the other
 Home-page: https://github.com/abidlabs/contrastive
 Author: Abubakar Abid
