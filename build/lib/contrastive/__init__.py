@@ -209,8 +209,8 @@ class CPCA(object):
         elif plot:
             try:
                 import matplotlib.pyplot as plt
-            except:
-                print("To use the plotting feature, you must download the 'matplotlib' package")
+            except ImportError:
+                raise ImportError("Something wrong while loading matplotlib.pyplot! You probably don't have plotting libraries installed.")
             if (alpha_selection=='auto'):
                 transformed_data, best_alphas = self.automated_cpca(dataset, n_alphas_to_return, n_alphas, max_log_alpha)
                 plt.figure(figsize=[14,3])

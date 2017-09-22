@@ -5,7 +5,7 @@ except ImportError:
 
 setup(
     name = 'contrastive',
-    version = '0.1.4',
+    version = '0.1.5',
     description = 'Python library for performing unsupervised learning (e.g. PCA) in contrastive settings, where one is interested in finding directions and patterns that exist one dataset, but not the other',
     author = 'Abubakar Abid',
     author_email = 'a12d@stanford.edu',
