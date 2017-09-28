@@ -7,6 +7,7 @@ Applications include dicovering subgroups in biological and medical data. Here a
 For more details, see the accompanying paper:
 
 	Abubakar Abid, Vivek Bagaria, Martin Zhang, James Zou
+	
 	`Contrastive Principal Component Analysis <https://arxiv.org/abs/1709.067160>`_.
 
 
