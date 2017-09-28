@@ -4,6 +4,12 @@ A python library for performing unsupervised machine learning on datasets with l
 
 Applications include dicovering subgroups in biological and medical data. Here are basic installation and usage instructions, written for Python 3 (in which the library has been developed and tested, although it should work in Python 2 as well).
 
+For more details, see the accompanying paper:
+
+> Abubakar Abid, Vivek Bagaria, Martin Zhang, James Zou
+> [Contrastive Principal Component Analysis](https://arxiv.org/abs/1709.067160)
+
+
 Installation
 --------------------
 
