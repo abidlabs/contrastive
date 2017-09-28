@@ -8,7 +8,7 @@ For more details, see the accompanying paper:
 
 	Abubakar Abid, Vivek Bagaria, Martin Zhang, James Zou
 	
-	`Contrastive Principal Component Analysis <https://arxiv.org/abs/1709.067160>`_.
+	`Contrastive Principal Component Analysis <https://arxiv.org/abs/1709.067160>`_ (2017).
 
 
 Installation
