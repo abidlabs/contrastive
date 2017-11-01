@@ -58,6 +58,9 @@ Note that :code:`foreground_data` and :code:`background_data` should be 2D numpy
 
 .. image:: images/gui_true.png
 
+Using the slider, you can see how the your data points move as you change the value of the contrast parameter. These animations can reveal groups in the data and other insights:
+
+.. image:: images/animation.gif
 
 Quick Test
 -------------------------------
