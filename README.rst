@@ -10,7 +10,7 @@ For more details, see the accompanying paper:
 	
 	`Contrastive Principal Component Analysis <https://arxiv.org/abs/1709.067160>`_ (2017).
 
-This repository also includes experiments to reproduce most of the figures in the paper. Please see the python notebooks in the `experiments` folder.
+This repository also includes experiments to reproduce most of the figures in the paper. Please see the python notebooks in the :code:`experiments` folder.
 
 Installation
 --------------------
