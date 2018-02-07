@@ -8,7 +8,7 @@ For more details, see the accompanying paper:
 
 	Abubakar Abid, Vivek Bagaria, Martin Zhang, James Zou
 	
-	`Contrastive Principal Component Analysis <https://arxiv.org/abs/1709.067160>`_ (2017).
+	`Contrastive Principal Component Analysis <https://arxiv.org/abs/1709.06716>`_ (2017).
 
 This repository also includes experiments to reproduce most of the figures in the paper. Please see the python notebooks in the :code:`experiments` folder.
 
