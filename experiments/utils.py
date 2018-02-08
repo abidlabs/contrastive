@@ -1,7 +1,4 @@
-import numpy as np
 from copy import deepcopy
-from numpy import *
-from numpy import linalg as LA
 import numpy as np, matplotlib.pyplot as plt
 from sklearn import cluster
 from PIL import Image,ImageOps
@@ -63,259 +60,203 @@ def resize_and_crop(img, size=(100,100), crop_type='middle'):
     # If the scale is the same, we do not need to crop
     return img
 
-
-def find_ap_alphas(active,background, n_components=2, max_num=3, max_log_alpha=2, damping=0.5):
-    affinity = create_affinity_matrix(active, background, n_components, max_num, max_log_alpha)
-    ap = cluster.AffinityPropagation(affinity='precomputed', damping=damping)
-    alphas = np.concatenate(([0],np.logspace(-1,max_log_alpha,40)))
-    ap.fit(affinity)
-    labels = ap.labels_
-    print(damping)
-    print(labels)
-    best_alphas = list()
-    for i in range(np.max(labels)+1):
-        idx = np.where(labels==i)[0]
-        if not(0 in idx): #because we don't want to include the cluster that includes alpha=0
-            middle_idx = int(np.min(idx)) #min seems to work better than median though I don't know why exactly
-            best_alphas.append(alphas[middle_idx])
+class Dataset(object):
+    # Returns data    
+    def get_data(self):
+        return self.data    
+    # Returns the background data 
+    def get_bg(self):
+        return self.bg    
+    # Returns the active data
+    def get_active(self):
+        return self.active
+    # Returns the active labels
+    def get_active_labels(self):
+        return self.active_labels    
+    # Returns the pca directions for the active set
+    def get_pca_directions(self):
+        return self.pca_directions
+    # Returns the active set projected in the pca directions
+    def get_active_pca_projected(self):
+        return self.active_pca
+    def get_affinity_matrix(self):
+        return self.affinity_matrix
     
-    return np.sort(best_alphas), alphas, affinity[0,:], labels
+    # A helper method to standardize arrays
+    def standardize(self, array):
+        standardized_array =  (array-np.mean(array,axis=0)) / np.std(array,axis=0)
+        return np.nan_to_num(standardized_array)
 
-def create_affinity_matrix(active,background, n_components=2, max_num=3, max_log_alpha=2):
-    from math import pi
-    alphas = np.concatenate(([0],np.logspace(-1,max_log_alpha,40)))
-    subspaces = list()
-    k = len(alphas)
-    affinity = pi/4*np.identity(k)
-    for alpha in alphas:
-        n, space, _ = contrast_pca_alpha(active,background, n_components, alpha=alpha)
-        q, r = np.linalg.qr(space)
-        subspaces.append(q)
-    for i in range(k):
-        for j in range(i+1,k):
-            q0 = subspaces[i]
-            q1 = subspaces[j]
-            u, s, v = np.linalg.svd(q0.T.dot(q1))
-            angle = np.arccos(s[0])
-            affinity[i,j] = pi/2 - angle
-    affinity = affinity + affinity.T
-    return np.nan_to_num(affinity)
-        
-    #calculate distance between each subspace, subtracting pi
-    
-def find_spectral_alphas(active,background, n_components=2, max_num=3, max_log_alpha=2):
-    affinity = create_affinity_matrix(active, background, n_components, max_num, max_log_alpha)
-    spectral = cluster.SpectralClustering(n_clusters=max_num+1,
-                                          affinity='precomputed')
-    
-    alphas = np.concatenate(([0],np.logspace(-1,max_log_alpha,40)))
-    spectral.fit(affinity)
-    labels = spectral.labels_
-    best_alphas = list()
-    for i in range(max_num+1):
-        idx = np.where(labels==i)[0]
-        if not(0 in idx): #because we don't want to include the cluster that includes alpha=0
-            middle_idx = int(np.min(idx)) #min seems to work better than median though I don't know why exactly
-            best_alphas.append(alphas[middle_idx])
-    
-    return np.sort(best_alphas), alphas, affinity[0,:], labels
-
-def standardize(array):
-    standardized_array =  (array-np.mean(array,axis=0)) / np.std(array,axis=0)
-    return np.nan_to_num(standardized_array)
-
-
-"""
-    Returns eigen values, vectors sorted by the *magnitude* of eigen values
-    The eigen vectors are in the columns
-"""
-def eigen_values_abs_sorted(M):
-    #Calculating the eigen values
-    eig_values, eig_vecs = linalg.eigh(M)
-    
-    #Taking their absolute values
-    eig_values = np.abs(eig_values)
-    
-    #Sorting the (abs) eigen values
-    idx = eig_values.argsort()[::-1]
-    eig_values = eig_values[idx]
-    eig_vecs = eig_vecs[:,idx]
-    
-    return eig_values, eig_vecs
-
-def contrast_pca_alpha(foreground, background, n_components = 1, alpha=0.5, return_eigenvectors=False):
-    n1, d = foreground.shape
-    n2, d = background.shape
-    x1c = (foreground - np.mean(foreground,axis=0))
-    x2c = (background - np.mean(background,axis=0))
-    sigma = x1c.T.dot(x1c)/n1 - alpha*x2c.T.dot(x2c)/n2
-    w, v = LA.eig(sigma)
-    idx = np.argpartition(w, -n_components)[-n_components:]
-    idx = idx[np.argsort(-w[idx])]
-    v_top = v[:,idx]
-    reduced_foreground = x1c.dot(v_top)
-    reduced_background = x2c.dot(v_top)
-    if (return_eigenvectors):
-        return idx, reduced_foreground, reduced_background, v_top
-    else:
-        return idx, reduced_foreground, reduced_background
-
-def subspace_angles(active, background, alphas, n_components=2):
-    _, space0, _ = contrast_pca_alpha(active,background, n_components, alpha=0)
-    angles1 = list()
-    angles2 = list()
-    nums = list()
-    for alpha in alphas:
-        n, space1, _ = contrast_pca_alpha(active,background, n_components, alpha=alpha)
-        q0, r0 = np.linalg.qr(space0)
-        q1, r1 = np.linalg.qr(space1)
-        u, s, v = np.linalg.svd(q0.T.dot(q1))
-        angles1.append(np.arccos(s[0]))
-        angles2.append(np.arccos(s[1]))
-        nums.append(n)
-    return angles1, angles2, nums
-
-def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
-                 kpsh=False, valley=False, show=False, ax=None):
-
-    """Detect peaks in data based on their amplitude and other features.
-    Parameters
-    ----------
-    x : 1D array_like
-        data.
-    mph : {None, number}, optional (default = None)
-        detect peaks that are greater than minimum peak height.
-    mpd : positive integer, optional (default = 1)
-        detect peaks that are at least separated by minimum peak distance (in
-        number of data).
-    threshold : positive number, optional (default = 0)
-        detect peaks (valleys) that are greater (smaller) than `threshold`
-        in relation to their immediate neighbors.
-    edge : {None, 'rising', 'falling', 'both'}, optional (default = 'rising')
-        for a flat peak, keep only the rising edge ('rising'), only the
-        falling edge ('falling'), both edges ('both'), or don't detect a
-        flat peak (None).
-    kpsh : bool, optional (default = False)
-        keep peaks with same height even if they are closer than `mpd`.
-    valley : bool, optional (default = False)
-        if True (1), detect valleys (local minima) instead of peaks.
-    show : bool, optional (default = False)
-        if True (1), plot data in matplotlib figure.
-    ax : a matplotlib.axes.Axes instance, optional (default = None).
-    Returns
-    -------
-    ind : 1D array_like
-        indeces of the peaks in `x`.
-    Notes
-    -----
-    The detection of valleys instead of peaks is performed internally by simply
-    negating the data: `ind_valleys = detect_peaks(-x)`
-    
-    The function can handle NaN's 
-    See this IPython Notebook [1]_.
-    References
-    ----------
-    .. [1] http://nbviewer.ipython.org/github/demotu/BMC/blob/master/notebooks/DetectPeaks.ipynb
-    Examples
-    --------
-    >>> from detect_peaks import detect_peaks
-    >>> x = np.random.randn(100)
-    >>> x[60:81] = np.nan
-    >>> # detect all peaks and plot data
-    >>> ind = detect_peaks(x, show=True)
-    >>> print(ind)
-    >>> x = np.sin(2*np.pi*5*np.linspace(0, 1, 200)) + np.random.randn(200)/5
-    >>> # set minimum peak height = 0 and minimum peak distance = 20
-    >>> detect_peaks(x, mph=0, mpd=20, show=True)
-    >>> x = [0, 1, 0, 2, 0, 3, 0, 2, 0, 1, 0]
-    >>> # set minimum peak distance = 2
-    >>> detect_peaks(x, mpd=2, show=True)
-    >>> x = np.sin(2*np.pi*5*np.linspace(0, 1, 200)) + np.random.randn(200)/5
-    >>> # detection of valleys instead of peaks
-    >>> detect_peaks(x, mph=0, mpd=20, valley=True, show=True)
-    >>> x = [0, 1, 1, 0, 1, 1, 0]
-    >>> # detect both edges
-    >>> detect_peaks(x, edge='both', show=True)
-    >>> x = [-2, 1, -2, 2, 1, 1, 3, 0]
-    >>> # set threshold = 2
-    >>> detect_peaks(x, threshold = 2, show=True)
+    """ 
+    Initialization performs the following operations
+    1) Centering the active, background seperately
+    2) Standardize if to_standardize is specified as True
+    3) Calculate the covariance_matrices
     """
+    def __init__(self, to_standardize=True):
+        #from contrastive import PCA
+        
+        # Housekeeping
+        self.pca_directions = None
+        self.bg_eig_vals = None
+        self.affinity_matrix = None
+        
+        # Dataset sizes
+        self.n_active, _           = self.active.shape
+        self.n_bg, self.features_d = self.bg.shape
+        
+        #Center the background data
+        self.bg = self.bg - np.mean(self.bg, axis=0)
+        if to_standardize: #Standardize if specified
+            self.bg = self.standardize(self.bg)
+        #Calculate the covariance matrix
+        self.bg_cov = self.bg.T.dot(self.bg)/(self.bg.shape[0]-1)
+        
+        #Center the active data
+        self.active = self.active - np.mean(self.active, axis=0)
+        if to_standardize: #Standardize if specified
+            self.active = self.standardize(self.active)
+        #Calculate the covariance matrix
+        self.active_cov = self.active.T.dot(self.active)/(self.n_active-1)
 
-    x = np.atleast_1d(x).astype('float64')
-    if x.size < 3:
-        return np.array([], dtype=int)
-    if valley:
-        x = -x
-    # find indexes of all peaks
-    dx = x[1:] - x[:-1]
-    # handle NaN's
-    indnan = np.where(np.isnan(x))[0]
-    if indnan.size:
-        x[indnan] = np.inf
-        dx[np.where(np.isnan(dx))[0]] = np.inf
-    ine, ire, ife = np.array([[], [], []], dtype=int)
-    if not edge:
-        ine = np.where((np.hstack((dx, 0)) < 0) & (np.hstack((0, dx)) > 0))[0]
-    else:
-        if edge.lower() in ['rising', 'both']:
-            ire = np.where((np.hstack((dx, 0)) <= 0) & (np.hstack((0, dx)) > 0))[0]
-        if edge.lower() in ['falling', 'both']:
-            ife = np.where((np.hstack((dx, 0)) < 0) & (np.hstack((0, dx)) >= 0))[0]
-    ind = np.unique(np.hstack((ine, ire, ife)))
-    # handle NaN's
-    if ind.size and indnan.size:
-        # NaN's and values close to NaN's cannot be peaks
-        ind = ind[np.in1d(ind, np.unique(np.hstack((indnan, indnan-1, indnan+1))), invert=True)]
-    # first and last values of x cannot be peaks
-    if ind.size and ind[0] == 0:
-        ind = ind[1:]
-    if ind.size and ind[-1] == x.size-1:
-        ind = ind[:-1]
-    # remove peaks < minimum peak height
-    if ind.size and mph is not None:
-        ind = ind[x[ind] >= mph]
-    # remove peaks - neighbors < threshold
-    if ind.size and threshold > 0:
-        dx = np.min(np.vstack([x[ind]-x[ind-1], x[ind]-x[ind+1]]), axis=0)
-        ind = np.delete(ind, np.where(dx < threshold)[0])
-    # detect small peaks closer than minimum peak distance
-    if ind.size and mpd > 1:
-        ind  = ind[np.argsort(x[ind])][::-1]  # sort ind by peak height
-        idel = np.zeros(ind.size, dtype=bool)
-        for i in range(ind.size):
-            if not idel[i]:
-                # keep peaks with the same height if kpsh is True
-                idel = idel | (ind >= ind[i] - mpd) & (ind <= ind[i] + mpd) \
-                    & (x[ind[i]] > x[ind] if kpsh else True)
-                idel[i] = 0  # Keep current peak
-        # remove the small peaks and sort back the indexes by their occurrence
-        ind = np.sort(ind[~idel])
+        #self.cpca = PCA()
+        #self.cpca.fit_transform(foreground=self.active, background=self.bg)
 
-    if show:
-        if indnan.size:
-            x[indnan] = np.nan
-        if valley:
-            x = -x
-        plt.plot(x, mph, mpd, threshold, edge, valley, ax, ind)
+    """
+    Perfomes plain vanilla pca on the active dataset (TO DO: write the same code for background )
+    Not a part of init because this might be time consuming
+    """
+    def pca_active(self, n_components = 2):
+        
+        # Perform PCA only once (to save computation time)
+        if self.pca_directions is None:
+            #print("PCA is being perfomed on the dataset")
+            # Calculating the top eigen vectors on the covariance of the active dataset
+            w, v = LA.eig(self.active_cov)
+            # Sorting the vectors in the order of eigen values
+            idx  = w.argsort()[::-1]
+            idx  = idx[:n_components]
+            w    = w[idx]
 
-    return ind
+            # Storing the top_pca_directions
+            self.pca_directions = v[:,idx]
+            # Storing the active dataset projected on the top_pca_directions
+            self.active_pca     = self.active.dot(self.pca_directions)
+        else:
+            print("PCA has been previously perfomed on the dataset")
 
-def find_optimal_alphas(active, background, n_components=2, max_num=3, max_log_alpha=2):
-    alphas = np.logspace(-1,max_log_alpha,25)
-    angles1, angles2, nums = subspace_angles(active, background, alphas, n_components)
-    idx_peaks = detect_peaks(np.diff(angles1)+np.array(range(1,len(angles1)))/len(angles1)/10)
-    alpha_peaks = alphas[1+idx_peaks]
-    if len(alpha_peaks) > max_num:
-        ind = np.argpartition(alpha_peaks, -max_num)[-max_num:]
-        alpha_peaks = alpha_peaks[ind]
-    return alpha_peaks
+    """
+    Returns active and bg dataset projected in the cpca direction, as well as the top c_cpca eigenvalues indices.
+    If specified, it returns the top_cpca directions
+    """
+    def cpca_alpha(self, n_components = 2, alpha=1, return_eigenvectors=False):
+        #return None, self.cpca.cpca_alpha(dataset=self.active,alpha=alpha), None
+        sigma = self.active_cov - alpha*self.bg_cov
+        w, v = LA.eig(sigma)
+        eig_idx = np.argpartition(w, -n_components)[-n_components:]
+        eig_idx = eig_idx[np.argsort(-w[eig_idx])]
+        v_top = v[:,eig_idx]
+        reduced_foreground = self.active.dot(v_top)
+        reduced_background = self.bg.dot(v_top)
 
-def find_optimal_alphas_and_plot(active,background, A_labels, n_components=2, max_num=3, max_log_alpha=2):
-    from matplotlib import pyplot as plt 
-    alphas = find_optimal_alphas(active,background, n_components, max_num, max_log_alpha)
-    alphas = np.concatenate(([0], alphas))
-    for alpha in alphas:
-        _, reduced_foreground, reduced_background = contrast_pca_alpha(active, background, n_components=2, alpha=alpha)
-        plt.figure()
-        plt.title(str(alpha))
-        plt.scatter(reduced_foreground[:,0], reduced_foreground[:,1], color=A_labels)
+        reduced_foreground[:,0] = reduced_foreground[:,0]*np.sign(reduced_foreground[0,0])
+        reduced_foreground[:,1] = reduced_foreground[:,1]*np.sign(reduced_foreground[0,1])
+        
+        
+        if (return_eigenvectors):
+            #return eig_idx, reduced_foreground, reduced_background, v_top
+            print("WHat?")
+            return None
+        else:
+            #return eig_idx, reduced_foreground, reduced_background
+            return None, reduced_foreground, None
+
+    """
+    This function performs contrastive PCA using the alpha technique on the 
+    active and background dataset. It automatically determines n_alphas=4 important values
+    of alpha up to based to the power of 10^(max_log_alpha=5) on spectral clustering
+    of the top subspaces identified by cPCA.
+    The final return value is the data projected into the top (n_components = 2) 
+    subspaces, which can be plotted outside of this function
+    """
+    def automated_cpca(self,  n_alphas=4, max_log_alpha=5, n_components = 2, affinity_metric='determinant', exemplar_method='medoid'):
+        best_alphas, all_alphas, angles0, labels = self.find_spectral_alphas(n_components, n_alphas-1, max_log_alpha, affinity_metric, exemplar_method)
+        best_alphas = np.concatenate(([0], best_alphas)) #one of the alphas is always alpha=0
+        data_to_plot = []
+        for alpha in best_alphas:
+            _, r_active, r_bg = self.cpca_alpha(n_components=n_components, alpha=alpha)
+            data_to_plot.append((r_active, r_bg))
+        return data_to_plot, best_alphas
+
+    
+    
+    """
+    This function performs contrastive PCA using the alpha technique on the 
+    active and background dataset. It returns the cPCA-reduced data for all values of alpha specified,
+    both the active and background, as well as the list of alphas
+    """
+    def manual_cpca(self, max_log_alpha=5, n_components = 2):
+        alphas = np.concatenate(([0],np.logspace(-1,max_log_alpha,40)))
+        data_to_plot = []
+        for alpha in alphas:
+            n, r_active, r_bg = self.cpca_alpha(n_components, alpha=alpha)
+            data_to_plot.append((r_active, r_bg))
+        return data_to_plot, alphas
+    
+    
+    """
+    This method performs spectral clustering on the affinity matrix of subspaces
+    returned by contrastive pca, and returns (`=3) exemplar values of alpha
+    """
+    def find_spectral_alphas(self, n_components=2, max_num=3, max_log_alpha=5, affinity_metric='determinant', exemplar_method='medoid'):
+        #if (self.affinity_matrix is None): #commented out because different kinds of affinity can be defined
+        self.create_affinity_matrix(n_components, max_log_alpha, affinity_metric)
+        affinity = self.affinity_matrix
+        spectral = cluster.SpectralClustering(n_clusters=max_num+1, affinity='precomputed')
+        alphas = np.concatenate(([0],np.logspace(-1,max_log_alpha,40)))
+        spectral.fit(affinity)
+        labels = spectral.labels_
+        best_alphas = list()
+        for i in range(max_num+1):
+            idx = np.where(labels==i)[0]
+            if not(0 in idx): #because we don't want to include the cluster that includes alpha=0
+                if exemplar_method=='smallest':
+                    exemplar_idx = int(np.min(idx)) #min seems to work better than median though I don't know why exactly
+                elif exemplar_method=='medoid':
+                    affinity_submatrix = affinity[idx][:, idx]
+                    sum_affinities = np.sum(affinity_submatrix, axis=0)
+                    exemplar_idx = idx[np.argmax(sum_affinities)]
+                else:
+                    raise ValueError("Invalid specification of exemplar method")
+                best_alphas.append(alphas[exemplar_idx])
+        return np.sort(best_alphas), alphas, affinity[0,:], labels
+
+    """
+    This method creates the affinity matrix of subspaces returned by contrastive pca
+    """
+    def create_affinity_matrix(self, n_components=2, max_log_alpha=5, affinity_metric='determinant'):
+        from math import pi
+        alphas = np.concatenate(([0],np.logspace(-1,max_log_alpha,40)))
+        print(alphas)
+        subspaces = list()
+        k = len(alphas)
+        if affinity_metric=='principal':
+            affinity = pi/4*np.identity(k)
+        elif affinity_metric=='determinant':
+            affinity = 0.5*np.identity(k) #it gets doubled
+        for alpha in alphas:
+            n, space, _ = self.cpca_alpha(n_components, alpha=alpha)
+            q, r = np.linalg.qr(space)
+            subspaces.append(q)
+        for i in range(k):
+            for j in range(i+1,k):
+                q0 = subspaces[i]
+                q1 = subspaces[j]
+                u, s, v = np.linalg.svd(q0.T.dot(q1))
+                if affinity_metric=='principal':
+                    angle = np.arccos(s[0])
+                    affinity[i,j] = pi/2 - angle
+                elif affinity_metric=='determinant':
+                    affinity[i,j] = np.prod(s)
+        affinity = affinity + affinity.T
+        self.affinity_matrix = np.nan_to_num(affinity)
