@@ -260,3 +260,11 @@ class Dataset(object):
                     affinity[i,j] = np.prod(s)
         affinity = affinity + affinity.T
         self.affinity_matrix = np.nan_to_num(affinity)
+        
+        
+        
+
+        
+        
+        
+        
