@@ -6,60 +6,60 @@
 from __future__ import print_function
 import numpy as np
 from numpy import linalg as LA
-from sklearn import cluster    
+from sklearn import cluster
 from sklearn.decomposition import PCA
 
 class CPCA(object):
     """
     Contrastive PCA (cPCA)
-    
-    Linear dimensionality reduction that uses eigenvalue decomposition 
-    to identify directions that have increased variance in the primary (foreground) 
+
+    Linear dimensionality reduction that uses eigenvalue decomposition
+    to identify directions that have increased variance in the primary (foreground)
     dataset relative to a secondary (background) dataset. Then, those directions
     are used to project the data to a lower dimensional space.
     """
-    
+
     # Getter methods for various attributes
     def get_data(self):
-        return self.data    
+        return self.data
     def get_bg(self):
-        return self.bg    
+        return self.bg
     def get_fg(self):
         return self.fg
     def get_active_labels(self):
-        return self.active_labels    
+        return self.active_labels
     def get_pca_directions(self):
         return self.pca_directions
     def get_active_pca_projected(self):
         return self.active_pca
     def get_affinity_matrix(self):
         return self.affinity_matrix
-    
+
     # A helper method to standardize arrays
     def standardize_array(self, array):
         standardized_array =  (array-np.mean(array,axis=0)) / np.std(array,axis=0)
         return np.nan_to_num(standardized_array)
-    
-    #stores 
+
+    #stores
     def __init__(self, n_components=2, standardize=True, verbose=False):
         self.standardize = standardize
         self.n_components = n_components
         self.verbose = verbose
         self.fitted = False
-        
+
         """
         Finds the covariance matrices of the foreground and background datasets,
         and then transforms the foreground dataset based on the principal contrastive components
-        
+
         Parameters: see self.fit() and self.transform() for parameter description
         """
     def fit_transform(self, foreground, background, plot=False, gui=False, alpha_selection='auto', n_alphas=40,  max_log_alpha=3, n_alphas_to_return=4, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
         self.fit(foreground, background)
-        return self.transform(dataset=foreground, alpha_selection=alpha_selection,  n_alphas=n_alphas, max_log_alpha=max_log_alpha, n_alphas_to_return=n_alphas_to_return, plot=plot, gui=gui, active_labels=active_labels, colors=colors, legend=legend, alpha_value=alpha_value, return_alphas=return_alphas)
-        
+        return self.transform(dataset=self.fg, alpha_selection=alpha_selection,  n_alphas=n_alphas, max_log_alpha=max_log_alpha, n_alphas_to_return=n_alphas_to_return, plot=plot, gui=gui, active_labels=active_labels, colors=colors, legend=legend, alpha_value=alpha_value, return_alphas=return_alphas)
+
         """
         Computes the covariance matrices of the foreground and background datasets
-        
+
         Parameters
         -----------
         foreground: array, shape (n_data_points, n_features)
@@ -69,30 +69,30 @@ class CPCA(object):
             The dataset in which the interesting directions that we would like to discover are absent or unenriched
 
         preprocess_with_pca_dim: int
-            If this parameter is provided (and it is greater than n_features), then both the foreground and background 
+            If this parameter is provided (and it is greater than n_features), then both the foreground and background
             datasets undergo a preliminary round of PCA to reduce their dimension to this number. If it is not provided
             but n_features > 1,000, a preliminary round of PCA is automatically performed to reduce the dimensionality to 1,000.
         """
-        
-    def fit(self, foreground, background, preprocess_with_pca_dim=None):        
+
+    def fit(self, foreground, background, preprocess_with_pca_dim=None):
         # Housekeeping
         self.pca_directions = None
         self.bg_eig_vals = None
         self.affinity_matrix = None
-        
+
         # Datasets and dataset sizes
         self.fg = foreground
         self.bg = background
         self.n_fg, self.features_d = foreground.shape
         self.n_bg, self.features_d_bg = background.shape
-        
+
         if not(self.features_d==self.features_d_bg):
             raise ValueError('The dimensionality of the foreground and background datasets must be the same')
-        
+
         #if the dimension is higher than preprocess_with_pca_dim, then PCA is performed to reduce the dimensionality
         if preprocess_with_pca_dim is None:
             preprocess_with_pca_dim = 1000
-        
+
         #Center the background and foreground data
         self.bg = self.bg - np.mean(self.bg, axis=0)
         if self.standardize: #Standardize if specified
@@ -101,7 +101,7 @@ class CPCA(object):
         self.fg = self.fg - np.mean(self.fg, axis=0)
         if self.standardize: #Standardize if specified
             self.fg = self.standardize_array(self.fg)
-    
+
         if (self.features_d>preprocess_with_pca_dim):
             data = np.concatenate((self.fg, self.bg),axis=0)
             pca = PCA(n_components = preprocess_with_pca_dim)
@@ -109,11 +109,11 @@ class CPCA(object):
             self.fg = data[:self.n_fg,:]
             self.bg = data[self.n_fg:,:]
             self.features_d = preprocess_with_pca_dim
-                             
+
             if (self.verbose):
                 print("Data dimensionality reduced to "+str(preprocess_with_pca_dim)+". Percent variation retained: ~"+str(int(100*np.sum(pca.explained_variance_ratio_)))+'%')
 
-            
+
         if (self.verbose):
             print("Data loaded and preprocessed")
 
@@ -123,10 +123,10 @@ class CPCA(object):
 
         if (self.verbose):
             print("Covariance matrices computed")
-        
+
         self.fitted = True
-        
-    
+
+
     def transform(self, dataset, alpha_selection='auto', n_alphas=40, max_log_alpha=3, n_alphas_to_return=4, plot=False, gui=False, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
         if (self.fitted==False):
             raise ValueError("This model has not been fit to a foreground/background dataset yet. Please run the fit() or fit_transform() functions first.")
@@ -148,7 +148,7 @@ class CPCA(object):
             self.active_labels = active_labels
             if colors is None:
                  self.colors = ['k','r','b','g','c']
-               
+
         if gui:
             try:
                 import matplotlib.pyplot as plt
@@ -165,19 +165,19 @@ class CPCA(object):
             transformed_data_manual, alphas_manual = self.all_cpca(dataset, n_alphas, max_log_alpha)
             if (self.n_fg>1000):
                 print("The GUI may be slow to respond with large numbers of data points. Consider using a subset of the original data.")
-            
+
             """
             Handles the plotting
             """
             def graph_foreground(ax,fg, active_labels, alpha):
                 for i, l in enumerate(np.sort(np.unique(active_labels))):
-                    ax.scatter(fg[np.where(active_labels==l),0],fg[np.where(active_labels==l),1], color=self.colors[i%len(self.colors)], alpha=0.6)    
+                    ax.scatter(fg[np.where(active_labels==l),0],fg[np.where(active_labels==l),1], color=self.colors[i%len(self.colors)], alpha=0.6)
                 if (alpha==0):
                     ax.annotate(r'$\alpha$='+str(np.round(alpha,2))+" (PCA)", (0.05,0.05), xycoords='axes fraction')
                 else:
-                    ax.annotate(r'$\alpha$='+str(np.round(alpha,2)), (0.05,0.05), xycoords='axes fraction')        
-            
-            
+                    ax.annotate(r'$\alpha$='+str(np.round(alpha,2)), (0.05,0.05), xycoords='axes fraction')
+
+
             """
             This code gets run whenever the widget slider is moved
             """
@@ -190,22 +190,22 @@ class CPCA(object):
                     fg = transformed_data_auto[i]
                     graph_foreground(ax1, fg, self.active_labels, alphas_auto[i])
 
-                    ax5=fig.add_subplot(gs[:,2:]) # Second row, span all columns 
+                    ax5=fig.add_subplot(gs[:,2:]) # Second row, span all columns
 
                     alpha_idx = np.abs(alphas_manual-10**value).argmin()
                     fg = transformed_data_manual[alpha_idx]
                     graph_foreground(ax5, fg, self.active_labels, alphas_manual[alpha_idx])
-                    
+
                 #if len(np.unique(self.active_labels))>1:
                     #plt.legend()
-                
-                plt.tight_layout()            
+
+                plt.tight_layout()
                 plt.show()
-            
+
             widg = interact(update, value=widgets.FloatSlider(description=r'\(\log_{10}{\alpha} \)', min=-1, max=3, step=4/40, continuous_update=False, layout=Layout(width='80%')))
-            
+
             return
-        
+
         elif plot:
             try:
                 import matplotlib.pyplot as plt
@@ -235,7 +235,7 @@ class CPCA(object):
                 if len(np.unique(self.active_labels))>1:
                     plt.legend()
                 plt.show()
-               
+
             return
 
         else:
@@ -246,20 +246,20 @@ class CPCA(object):
                 transformed_data, all_alphas = self.all_cpca(dataset, n_alphas, max_log_alpha)
                 alpha_values = all_alphas
             else:
-                transformed_data = self.cpca_alpha(dataset, alpha_value)                
+                transformed_data = self.cpca_alpha(dataset, alpha_value)
                 alpha_values = alpha_value
         if return_alphas:
             return transformed_data, alpha_values
         else:
             return transformed_data
 
-    
+
     """
-    This function performs contrastive PCA using the alpha technique on the 
+    This function performs contrastive PCA using the alpha technique on the
     active and background dataset. It automatically determines n_alphas=4 important values
     of alpha up to based to the power of 10^(max_log_alpha=5) on spectral clustering
     of the top subspaces identified by cPCA.
-    The final return value is the data projected into the top (n_components = 2) 
+    The final return value is the data projected into the top (n_components = 2)
     subspaces, which can be plotted outside of this function
     """
     def automated_cpca(self, dataset, n_alphas_to_return, n_alphas, max_log_alpha):
@@ -269,10 +269,10 @@ class CPCA(object):
         for alpha in best_alphas:
             transformed_dataset = self.cpca_alpha(dataset=dataset, alpha=alpha)
             data_to_plot.append(transformed_dataset)
-        return data_to_plot, best_alphas        
-        
+        return data_to_plot, best_alphas
+
     """
-    This function performs contrastive PCA using the alpha technique on the 
+    This function performs contrastive PCA using the alpha technique on the
     active and background dataset. It returns the cPCA-reduced data for all values of alpha specified,
     both the active and background, as well as the list of alphas
     """
@@ -282,7 +282,7 @@ class CPCA(object):
         for alpha in alphas:
             transformed_dataset = self.cpca_alpha(dataset=dataset, alpha=alpha)
             data_to_plot.append(transformed_dataset)
-        return data_to_plot, alphas        
+        return data_to_plot, alphas
 
     """
     Returns active and bg dataset projected in the cpca direction, as well as the top c_cpca eigenvalues indices.
@@ -299,7 +299,7 @@ class CPCA(object):
         reduced_dataset[:,0] = reduced_dataset[:,0]*np.sign(reduced_dataset[0,0])
         reduced_dataset[:,1] = reduced_dataset[:,1]*np.sign(reduced_dataset[0,1])
         return reduced_dataset
-    
+
     """
     This method performs spectral clustering on the affinity matrix of subspaces
     returned by contrastive pca, and returns (`=3) exemplar values of alpha
@@ -309,7 +309,7 @@ class CPCA(object):
         affinity = self.affinity_matrix
         spectral = cluster.SpectralClustering(n_clusters=n_alphas_to_return, affinity='precomputed')
         alphas = np.concatenate(([0],np.logspace(-1,max_log_alpha,n_alphas)))
-        spectral.fit(affinity)        
+        spectral.fit(affinity)
         labels = spectral.labels_
         best_alphas = list()
         for i in range(n_alphas_to_return):
@@ -319,7 +319,7 @@ class CPCA(object):
                 sum_affinities = np.sum(affinity_submatrix, axis=0)
                 exemplar_idx = idx[np.argmax(sum_affinities)]
                 best_alphas.append(alphas[exemplar_idx])
-        return np.sort(best_alphas), alphas, affinity[0,:], labels        
+        return np.sort(best_alphas), alphas, affinity[0,:], labels
 
     """
     This method creates the affinity matrix of subspaces returned by contrastive pca
@@ -349,24 +349,24 @@ class Kernel_CPCA(CPCA):
         self.gamma=gamma
         super().__init__(n_components, standardize, verbose)
 
-    def fit_transform(self, foreground, background, plot=False, gui=False, alpha_selection='auto', n_alphas=40,  max_log_alpha=3, n_alphas_to_return=4, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):        
+    def fit_transform(self, foreground, background, plot=False, gui=False, alpha_selection='auto', n_alphas=40,  max_log_alpha=3, n_alphas_to_return=4, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
         self.fg = foreground
         self.bg = background
         self.n_fg, self.features_d = foreground.shape
         self.n_bg, self.features_d_bg = background.shape
         if (gui or plot):
-            print("The parameters gui and plot cannot be set to True in Kernel PCA. Will return transformed data as an array instead")   
+            print("The parameters gui and plot cannot be set to True in Kernel PCA. Will return transformed data as an array instead")
         if not(alpha_selection=='manual'):
             print("The alpha parameter must be set manually for Kernel PCA. Will be using value of alpha = 2")
             alpha_value = 2
         return cpca_alpha(alpha_value)
-    
+
     def fit(self, foreground, background, preprocess_with_pca_dim=None):
         raise ValueError("For Kernel CPCA, the fit() function is not defined. Please use the fit_transform() function directly")
-    
+
     def transform(self, dataset, alpha_selection='auto', n_alphas=40, max_log_alpha=3, n_alphas_to_return=4, plot=False, gui=False, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
         raise ValueError("For Kernel CPCA, the transform() function is not defined. Please use the fit_transform() function directly")
-    
+
     def cpca_alpha(self, alpha,degree=2,coef0=1):
         N=self.n_fg + self.n_bg
         Z=np.concatenate([self.fg,self.bg],axis=0)
@@ -402,7 +402,7 @@ class Kernel_CPCA(CPCA):
             A[:,i]/=A_norm[i]+1e-15
 
         Z_proj_kernel=K.dot(A[:,-2:])
-        X_proj_kernel=Z_proj_kernel[0:n,:] 
+        X_proj_kernel=Z_proj_kernel[0:n,:]
         Y_proj_kernel=Z_proj_kernel[n:,:]
 
         return X_proj_kernel#,Y_proj_kernel,Sig[-2:],A[:,-2:]
@@ -423,4 +423,36 @@ class Kernel_CPCA(CPCA):
         +np.ones([n,n]).dot(Kxy).dot(np.ones([m,m]))/n/m
         K_center[n:,:][:,0:n]=Kyx - np.ones([m,m]).dot(Kyx)/m - Kyx.dot(np.ones([n,n]))/n\
         +np.ones([m,m]).dot(Kyx).dot(np.ones([n,n]))/m/n
-        return K_center    
+        return K_center
+
+if __name__ == '__main__':
+    N = 401; D = 1001; gap=3
+    # In B, all the data pts are from the same distribution, which has different variances in three subspaces.
+    B = np.zeros((N, D))
+    B[:,0:10] = np.random.normal(0,10,(N,10))
+    B[:,10:20] = np.random.normal(0,3,(N,10))
+    B[:,20:30] = np.random.normal(0,1,(N,10))
+
+
+    # In A there are four clusters.
+    A = np.zeros((N, D))
+    A[:,0:10] = np.random.normal(0,10,(N,10))
+    # group 1
+    A[0:100, 10:20] = np.random.normal(0,1,(100,10))
+    A[0:100, 20:30] = np.random.normal(0,1,(100,10))
+    # group 2
+    A[100:200, 10:20] = np.random.normal(0,1,(100,10))
+    A[100:200, 20:30] = np.random.normal(gap,1,(100,10))
+    # group 3
+    A[200:300, 10:20] = np.random.normal(2*gap,1,(100,10))
+    A[200:300, 20:30] = np.random.normal(0,1,(100,10))
+    # group 4
+    A[300:400, 10:20] = np.random.normal(2*gap,1,(100,10))
+    A[300:400, 20:30] = np.random.normal(gap,1,(100,10))
+    A_labels = [0]*100+[1]*100+[2]*100+[3]*100
+
+    cpca = CPCA(standardize=False)
+    cpca.fit_transform(A, B, plot=True, active_labels=A_labels)
+
+    print(A.shape)
+    print(B.shape)
