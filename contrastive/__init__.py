@@ -147,7 +147,9 @@ class CPCA(object):
                 active_labels = np.ones(dataset.shape[0])
             self.active_labels = active_labels
             if colors is None:
-                 self.colors = ['k','r','b','g','c']
+                self.colors = ['k','r','b','g','c']
+            else:
+                self.colors = colors
 
         if gui:
             try:
@@ -224,16 +226,13 @@ class CPCA(object):
                     plt.legend()
                 plt.show()
             elif (alpha_selection=='manual'):
-                transformed_data, best_alphas = self.automated_cpca(dataset, n_alphas_to_return, n_alphas, max_log_alpha)
-                plt.figure(figsize=[14,3])
-                for j, fg in enumerate(transformed_data):
-                    plt.subplot(1,4,j+1)
-                    for i, l in enumerate(np.sort(np.unique(self.active_labels))):
-                        idx = np.where(self.active_labels==l)
-                        plt.scatter(fg[idx,0],fg[idx,1], color=self.colors[i%len(self.colors)], alpha=0.6, label='Class '+str(i))
-                    plt.title('Alpha='+str(np.round(best_alphas[j],2)))
-                if len(np.unique(self.active_labels))>1:
-                    plt.legend()
+                fg = self.cpca_alpha(dataset, alpha_value)
+                plt.figure(figsize=[6,6])
+                for i, l in enumerate(np.sort(np.unique(self.active_labels))):
+                    idx = np.where(self.active_labels==l)
+                    plt.scatter(fg[idx,0],fg[idx,1], color=self.colors[i%len(self.colors)], alpha=0.6, label='Class '+str(i))
+                plt.title('Alpha=' + str(alpha_value))
+                plt.legend()
                 plt.show()
 
             return
