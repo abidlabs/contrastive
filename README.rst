@@ -4,11 +4,21 @@ A python library for performing unsupervised machine learning on datasets with l
 
 Applications include dicovering subgroups in biological and medical data. Here are basic installation and usage instructions, written for Python 3 (in which the library has been developed and tested, although it should work in Python 2 as well).
 
-For more details, see the accompanying paper:
+For more details, see the accompanying paper: ["Exploring Patterns Enriched in a Dataset with Contrastive Principal Component Analysis"](https://www.nature.com/articles/s41467-018-04608-8.pdf), Nature Communications (2018)
 
-	Abubakar Abid, Vivek Bagaria, Martin Zhang, James Zou
-	
-	`Contrastive Principal Component Analysis <https://arxiv.org/abs/1709.06716>`_ (2017).
+.. code-block:: 
+
+	@article{abid2018exploring,
+	  title={Exploring patterns enriched in a dataset with contrastive principal component analysis},
+	  author={Abid, Abubakar and Zhang, Martin J and Bagaria, Vivek K and Zou, James},
+	  journal={Nature communications},
+	  volume={9},
+	  number={1},
+	  pages={2134},
+	  year={2018},
+	  publisher={Nature Publishing Group}
+	}
+
 
 This repository also includes experiments to reproduce most of the figures in the paper. Please see the python notebooks in the :code:`experiments` folder.
 
