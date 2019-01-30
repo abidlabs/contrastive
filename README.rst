@@ -5,7 +5,7 @@ A python library for performing unsupervised machine learning on datasets with l
 Applications include dicovering subgroups in biological and medical data. Here are basic installation and usage instructions, written for Python 3 (in which the library has been developed and tested, although it should work in Python 2 as well).
 
 For more details, see the accompanying paper: `"Exploring Patterns Enriched in a Dataset with Contrastive Principal Component Analysis"
-<https://www.nature.com/articles/s41467-018-04608-8.pdf/>`_., *Nature Communications* (2018)
+<https://www.nature.com/articles/s41467-018-04608-8.pdf/>`_, *Nature Communications* (2018)
 
 .. code-block:: 
 
@@ -17,7 +17,6 @@ For more details, see the accompanying paper: `"Exploring Patterns Enriched in a
 	  number={1},
 	  pages={2134},
 	  year={2018},
-	  publisher={Nature Publishing Group}
 	}
 
 
