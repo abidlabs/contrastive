@@ -296,6 +296,10 @@ class CPCA(object):
         eig_idx = eig_idx[np.argsort(-w[eig_idx])]
         v_top = v[:,eig_idx]
         reduced_dataset = dataset.dot(v_top)
+        
+        if type(reduced_dataset) == type(pd.DataFrame()):
+            reduced_dataset = reduced_dataset.to_numpy()
+            
         reduced_dataset[:,0] = reduced_dataset[:,0]*np.sign(reduced_dataset[0,0])
         reduced_dataset[:,1] = reduced_dataset[:,1]*np.sign(reduced_dataset[0,1])
         return reduced_dataset
