@@ -295,8 +295,9 @@ class CPCA(object):
         eig_idx = eig_idx[np.argsort(-w[eig_idx])]
         v_top = v[:,eig_idx]
         reduced_dataset = dataset.dot(v_top)
-        reduced_dataset[:,0] = reduced_dataset[:,0]*np.sign(reduced_dataset[0,0])
-        reduced_dataset[:,1] = reduced_dataset[:,1]*np.sign(reduced_dataset[0,1])
+        for comp in range(n_components):
+          reduced_dataset[:, comp] = reduced_dataset[:, comp] * \
+            np.sign(reduced_dataset[0, comp])
         return reduced_dataset
 
     """
