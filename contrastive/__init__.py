@@ -46,6 +46,7 @@ class CPCA(object):
         self.n_components = n_components
         self.verbose = verbose
         self.fitted = False
+        self.only_loadings = False
 
         """
         Finds the covariance matrices of the foreground and background datasets,
@@ -127,7 +128,7 @@ class CPCA(object):
         self.fitted = True
 
 
-    def transform(self, dataset, alpha_selection='auto', n_alphas=40, max_log_alpha=3, n_alphas_to_return=4, plot=False, gui=False, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
+    def transform(self, dataset=None, alpha_selection='auto', n_alphas=40, max_log_alpha=3, n_alphas_to_return=4, plot=False, gui=False, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False, only_loadings=False):
         if (self.fitted==False):
             raise ValueError("This model has not been fit to a foreground/background dataset yet. Please run the fit() or fit_transform() functions first.")
         if not(alpha_selection=='auto' or alpha_selection=='manual' or alpha_selection=='all'):
@@ -143,6 +144,10 @@ class CPCA(object):
         #you can't be plot or gui with non-2 components
         # Handle the plotting variables
         if (plot or gui):
+            if only_loadings:
+                raise ValueError('The only_loadings parameter cannot be set to True if plot or gui is set to True')
+            if dataset is None:
+                raise ValueError('The dataset parameter must be provided if plot or gui is set to True')
             if active_labels is None:
                 active_labels = np.ones(dataset.shape[0])
             self.active_labels = active_labels
@@ -238,6 +243,9 @@ class CPCA(object):
             return
 
         else:
+            if not only_loadings and dataset is None:
+                raise ValueError('The dataset parameter must be provided if only_loadings is not set to True')
+            self.only_loadings = only_loadings
             if (alpha_selection=='auto'):
                 transformed_data, best_alphas = self.automated_cpca(dataset, n_alphas_to_return, n_alphas, max_log_alpha)
                 alpha_values = best_alphas
@@ -247,6 +255,7 @@ class CPCA(object):
             else:
                 transformed_data = self.cpca_alpha(dataset, alpha_value)
                 alpha_values = alpha_value
+            self.only_loadings = False
         if return_alphas:
             return transformed_data, alpha_values
         else:
@@ -294,6 +303,8 @@ class CPCA(object):
         eig_idx = np.argpartition(w, -n_components)[-n_components:]
         eig_idx = eig_idx[np.argsort(-w[eig_idx])]
         v_top = v[:,eig_idx]
+        if self.only_loadings:
+            return v_top
         reduced_dataset = dataset.dot(v_top)
         for comp in range(n_components):
           reduced_dataset[:, comp] = reduced_dataset[:, comp] * \
