@@ -126,6 +126,7 @@ class CPCA(object):
             print("Covariance matrices computed")
 
         self.fitted = True
+        return self
 
 
     def transform(self, dataset=None, alpha_selection='auto', n_alphas=40, max_log_alpha=3, n_alphas_to_return=4, plot=False, gui=False, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False, only_loadings=False):
