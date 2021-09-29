@@ -1,2 +1,3 @@
 experiments/MNIST_data/*
 experiments/private/*
+*.egg-info
