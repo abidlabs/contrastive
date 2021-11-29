@@ -301,20 +301,20 @@ class CPCA(object):
     """
     def cpca_alpha(self, dataset, alpha=1):
         if self.only_loadings:
-          if not self.low_memory:
-            pca = PCA(self.n_components, svd_solver="randomized", copy=False,)
-          else: 
-            pca = IncrementalPCA(self.n_components, copy=False, batch_size=1000)
-          return pca.fit(self.fg_cov - alpha*self.bg_cov).components_
+            if not self.low_memory:
+                pca = PCA(self.n_components, svd_solver="randomized", copy=False,)
+            else: 
+                pca = IncrementalPCA(self.n_components, copy=False, batch_size=1000)
+            return pca.fit(self.fg_cov - alpha*self.bg_cov).components_
         else:
-          w, v = LA.eigh(self.fg_cov - alpha*self.bg_cov, overwrite_a=True, check_finite=False, driver="evd")
-          eig_idx = np.argpartition(w, -self.n_components)[-self.n_components:]
-          eig_idx = eig_idx[np.argsort(-w[eig_idx])]
-          v_top = v[:,eig_idx]
+            w, v = LA.eigh(self.fg_cov - alpha*self.bg_cov, overwrite_a=True, check_finite=False, driver="evd")
+            eig_idx = np.argpartition(w, -self.n_components)[-self.n_components:]
+            eig_idx = eig_idx[np.argsort(-w[eig_idx])]
+            v_top = v[:,eig_idx]
         reduced_dataset = dataset.dot(v_top)
         for comp in range(self.n_components):
-          reduced_dataset[:, comp] = reduced_dataset[:, comp] * \
-            np.sign(reduced_dataset[0, comp])
+            reduced_dataset[:, comp] = reduced_dataset[:, comp] * \
+                np.sign(reduced_dataset[0, comp])
         return reduced_dataset
 
     """
