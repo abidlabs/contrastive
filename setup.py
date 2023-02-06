@@ -15,7 +15,7 @@ setup(
     keywords = ['unsupervised', 'contrastive', 'learning','PCA'],
     install_requires=[
         'numpy',
-        'sklearn',
+        'scikit-learn',
         'matplotlib',
     ],
 )
