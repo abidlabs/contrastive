@@ -5,9 +5,9 @@
 
 from __future__ import print_function
 import numpy as np
-from numpy import linalg as LA
+from scipy import linalg as LA
 from sklearn import cluster
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, IncrementalPCA
 
 class CPCA(object):
     """
@@ -41,11 +41,13 @@ class CPCA(object):
         return np.nan_to_num(standardized_array)
 
     #stores
-    def __init__(self, n_components=2, standardize=True, verbose=False):
+    def __init__(self, n_components=2, standardize=True, verbose=False, low_memory=False):
         self.standardize = standardize
         self.n_components = n_components
         self.verbose = verbose
         self.fitted = False
+        self.only_loadings = False
+        self.low_memory = low_memory
 
         """
         Finds the covariance matrices of the foreground and background datasets,
@@ -125,9 +127,11 @@ class CPCA(object):
             print("Covariance matrices computed")
 
         self.fitted = True
+        return self
 
 
-    def transform(self, dataset, alpha_selection='auto', n_alphas=40, max_log_alpha=3, n_alphas_to_return=4, plot=False, gui=False, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
+    def transform(self, dataset=None, alpha_selection='auto', n_alphas=40, max_log_alpha=3, n_alphas_to_return=4, plot=False, gui=False, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False, only_loadings=False):
+        print('transform')
         if (self.fitted==False):
             raise ValueError("This model has not been fit to a foreground/background dataset yet. Please run the fit() or fit_transform() functions first.")
         if not(alpha_selection=='auto' or alpha_selection=='manual' or alpha_selection=='all'):
@@ -143,6 +147,10 @@ class CPCA(object):
         #you can't be plot or gui with non-2 components
         # Handle the plotting variables
         if (plot or gui):
+            if only_loadings:
+                raise ValueError('The only_loadings parameter cannot be set to True if plot or gui is set to True')
+            if dataset is None:
+                raise ValueError('The dataset parameter must be provided if plot or gui is set to True')
             if active_labels is None:
                 active_labels = np.ones(dataset.shape[0])
             self.active_labels = active_labels
@@ -238,6 +246,9 @@ class CPCA(object):
             return
 
         else:
+            if not only_loadings and dataset is None:
+                raise ValueError('The dataset parameter must be provided if only_loadings is not set to True')
+            self.only_loadings = only_loadings
             if (alpha_selection=='auto'):
                 transformed_data, best_alphas = self.automated_cpca(dataset, n_alphas_to_return, n_alphas, max_log_alpha)
                 alpha_values = best_alphas
@@ -247,6 +258,7 @@ class CPCA(object):
             else:
                 transformed_data = self.cpca_alpha(dataset, alpha_value)
                 alpha_values = alpha_value
+            self.only_loadings = False
         if return_alphas:
             return transformed_data, alpha_values
         else:
@@ -288,15 +300,21 @@ class CPCA(object):
     If specified, it returns the top_cpca directions
     """
     def cpca_alpha(self, dataset, alpha=1):
-        n_components = self.n_components
-        sigma = self.fg_cov - alpha*self.bg_cov
-        w, v = LA.eig(sigma)
-        eig_idx = np.argpartition(w, -n_components)[-n_components:]
-        eig_idx = eig_idx[np.argsort(-w[eig_idx])]
-        v_top = v[:,eig_idx]
+        if self.only_loadings:
+            if not self.low_memory:
+                pca = PCA(self.n_components, svd_solver="randomized", copy=False,)
+            else: 
+                pca = IncrementalPCA(self.n_components, copy=False, batch_size=1000)
+            return pca.fit(self.fg_cov - alpha*self.bg_cov).components_
+        else:
+            w, v = LA.eigh(self.fg_cov - alpha*self.bg_cov, overwrite_a=True, check_finite=False, driver="evd")
+            eig_idx = np.argpartition(w, -self.n_components)[-self.n_components:]
+            eig_idx = eig_idx[np.argsort(-w[eig_idx])]
+            v_top = v[:,eig_idx]
         reduced_dataset = dataset.dot(v_top)
-        reduced_dataset[:,0] = reduced_dataset[:,0]*np.sign(reduced_dataset[0,0])
-        reduced_dataset[:,1] = reduced_dataset[:,1]*np.sign(reduced_dataset[0,1])
+        for comp in range(self.n_components):
+            reduced_dataset[:, comp] = reduced_dataset[:, comp] * \
+                np.sign(reduced_dataset[0, comp])
         return reduced_dataset
 
     """
