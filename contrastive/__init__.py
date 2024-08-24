@@ -236,6 +236,7 @@ class CPCA(object):
                     plt.title('Alpha='+str(np.round(best_alphas[j],2)))
                 if len(np.unique(self.active_labels))>1:
                     plt.legend()
+                plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
                 plt.show()
             elif (alpha_selection=='manual'):
                 fg = self.cpca_alpha(dataset, alpha_value)
