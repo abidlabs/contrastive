@@ -51,6 +51,11 @@ class CPCA(object):
         self.n_components = n_components
         self.verbose = verbose
         self.fitted = False
+        self.rawvar = 0
+        self.pervar = 0
+
+        self.rawvars = []
+        self.pervars = []
 
         """
         Finds the covariance matrices of the foreground and background datasets,
@@ -226,6 +231,8 @@ class CPCA(object):
                     for i, l in enumerate(np.sort(np.unique(self.active_labels))):
                         idx = np.where(self.active_labels==l)
                         plt.scatter(fg[idx,0],fg[idx,1], color=self.colors[i%len(self.colors)], alpha=0.6, label='Class '+str(i))
+                    plt.xlabel(f"PC1: %var = {round(self.pervars[j][0], 2)}, raw = {round(self.rawvars[j][0], 2)}")
+                    plt.ylabel(f"PC2: %var = {round(self.pervars[j][1], 2)}, raw = {round(self.rawvars[j][1], 2)}")
                     plt.title('Alpha='+str(np.round(best_alphas[j],2)))
                 if len(np.unique(self.active_labels))>1:
                     plt.legend()
@@ -237,6 +244,8 @@ class CPCA(object):
                     idx = np.where(self.active_labels==l)
                     plt.scatter(fg[idx,0],fg[idx,1], color=self.colors[i%len(self.colors)], alpha=0.6, label='Class '+str(i))
                 plt.title('Alpha=' + str(alpha_value))
+                plt.xlabel(f"PC1: %var = {round(self.pervar[0], 2)}, raw = {round(self.rawvar[0], 2)}")
+                plt.ylabel(f"PC2: %var = {round(self.pervar[1], 2)}, raw = {round(self.rawvar[1], 2)}")
                 plt.legend()
                 plt.show()
 
@@ -270,9 +279,13 @@ class CPCA(object):
         best_alphas, all_alphas, _, _ = self.find_spectral_alphas(n_alphas, max_log_alpha, n_alphas_to_return)
         best_alphas = np.concatenate(([0], best_alphas)) #one of the alphas is always alpha=0
         data_to_plot = []
+        raw = []
+        per = []
         for alpha in best_alphas:
             transformed_dataset = self.cpca_alpha(dataset=dataset, alpha=alpha)
             data_to_plot.append(transformed_dataset)
+            self.rawvars.append(self.rawvar)
+            self.pervars.append(self.pervar)
         return data_to_plot, best_alphas
 
     """
@@ -286,6 +299,8 @@ class CPCA(object):
         for alpha in alphas:
             transformed_dataset = self.cpca_alpha(dataset=dataset, alpha=alpha)
             data_to_plot.append(transformed_dataset)
+            self.rawvars.append(self.rawvar)
+            self.pervars.append(self.pervar)
         return data_to_plot, alphas
 
     """
@@ -298,6 +313,8 @@ class CPCA(object):
         w, v = LA.eig(sigma)
         eig_idx = np.argpartition(w, -n_components)[-n_components:]
         eig_idx = eig_idx[np.argsort(-w[eig_idx])]
+        self.rawvar = w[eig_idx]
+        self.pervar = [i/np.sum(self.rawvar) for i in self.rawvar]
         v_top = v[:,eig_idx]
         reduced_dataset = dataset.dot(v_top)
         reduced_dataset[:,0] = reduced_dataset[:,0]*np.sign(reduced_dataset[0,0])
