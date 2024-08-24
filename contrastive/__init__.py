@@ -24,8 +24,13 @@ class CPCA(object):
         return self.data
     def get_bg(self):
         return self.bg
+    def get_bg_cov(self):
+        return self.bg_cov
     def get_fg(self):
         return self.fg
+    def get_fg_cov(self):
+        return self.fg_cov
+        
     def get_active_labels(self):
         return self.active_labels
     def get_pca_directions(self):
