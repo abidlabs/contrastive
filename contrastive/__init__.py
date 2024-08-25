@@ -315,7 +315,7 @@ class CPCA(object):
         eig_idx = np.argpartition(w, -n_components)[-n_components:]
         eig_idx = eig_idx[np.argsort(-w[eig_idx])]
         self.rawvar = w[eig_idx]
-        self.pervar = [i/np.sum(self.rawvar) for i in self.rawvar]
+        self.pervar = [i/np.sum(w) for i in self.rawvar]
         v_top = v[:,eig_idx]
         reduced_dataset = dataset.dot(v_top)
         reduced_dataset[:,0] = reduced_dataset[:,0]*np.sign(reduced_dataset[0,0])
