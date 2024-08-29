@@ -24,8 +24,13 @@ class CPCA(object):
         return self.data
     def get_bg(self):
         return self.bg
+    def get_bg_cov(self):
+        return self.bg_cov
     def get_fg(self):
         return self.fg
+    def get_fg_cov(self):
+        return self.fg_cov
+        
     def get_active_labels(self):
         return self.active_labels
     def get_pca_directions(self):
@@ -41,11 +46,19 @@ class CPCA(object):
         return np.nan_to_num(standardized_array)
 
     #stores
-    def __init__(self, n_components=2, standardize=True, verbose=False):
+    def __init__(self, n_components=2, standardize=True, verbose=False, show_scree = True):
         self.standardize = standardize
         self.n_components = n_components
         self.verbose = verbose
         self.fitted = False
+        self.show = show_scree
+        self.rawvar = 0
+        self.pervar = 0
+        self.pcs = []
+
+        self.rawvars = []
+        self.pervars = []
+        self.full_pc = []
 
         """
         Finds the covariance matrices of the foreground and background datasets,
@@ -53,8 +66,8 @@ class CPCA(object):
 
         Parameters: see self.fit() and self.transform() for parameter description
         """
-    def fit_transform(self, foreground, background, plot=False, gui=False, alpha_selection='auto', n_alphas=40,  max_log_alpha=3, n_alphas_to_return=4, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
-        self.fit(foreground, background)
+    def fit_transform(self, foreground, background, preprocess_with_pca_dim=None, plot=False, gui=False, alpha_selection='auto', n_alphas=40,  max_log_alpha=3, n_alphas_to_return=4, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
+        self.fit(foreground, background, preprocess_with_pca_dim)
         return self.transform(dataset=self.fg, alpha_selection=alpha_selection,  n_alphas=n_alphas, max_log_alpha=max_log_alpha, n_alphas_to_return=n_alphas_to_return, plot=plot, gui=gui, active_labels=active_labels, colors=colors, legend=legend, alpha_value=alpha_value, return_alphas=return_alphas)
 
         """
@@ -215,15 +228,36 @@ class CPCA(object):
                 raise ImportError("Something wrong while loading matplotlib.pyplot! You probably don't have plotting libraries installed.")
             if (alpha_selection=='auto'):
                 transformed_data, best_alphas = self.automated_cpca(dataset, n_alphas_to_return, n_alphas, max_log_alpha)
-                plt.figure(figsize=[14,3])
+                if self.show:
+                    plt.figure(figsize=[8,14])
+                else:
+                    plt.figure(figsize=[14,3])
+                
                 for j, fg in enumerate(transformed_data):
-                    plt.subplot(1,4,j+1)
+                    if self.show:
+                        plt.subplot(4,2,2*(j+1) - 1)
+                    else:
+                        plt.subplot(1,4,j+1)
                     for i, l in enumerate(np.sort(np.unique(self.active_labels))):
                         idx = np.where(self.active_labels==l)
                         plt.scatter(fg[idx,0],fg[idx,1], color=self.colors[i%len(self.colors)], alpha=0.6, label='Class '+str(i))
+                    plt.xlabel(f"PC1: %var = {round(self.pervars[j][0], 2)}, raw = {round(self.rawvars[j][0], 2)}")
+                    plt.ylabel(f"PC2: %var = {round(self.pervars[j][1], 2)}, raw = {round(self.rawvars[j][1], 2)}")
                     plt.title('Alpha='+str(np.round(best_alphas[j],2)))
-                if len(np.unique(self.active_labels))>1:
-                    plt.legend()
+                    if len(np.unique(self.active_labels))>1:
+                      plt.legend()
+                    
+                    if self.show:
+                        plt.subplot(4,2,2*(j+1))
+                        plt.plot(np.arange(1,(len(self.full_pc[j]) + 1)), self.full_pc[j], 'o-c', label = 'screeplot')
+                        plt.xlabel("Index of Principal Component")
+                        plt.ylabel("Raw Explained Variance")
+                        plt.title('Scree Plot of Eigenvalues')
+                        
+
+                        
+                
+                plt.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
                 plt.show()
             elif (alpha_selection=='manual'):
                 fg = self.cpca_alpha(dataset, alpha_value)
@@ -232,6 +266,8 @@ class CPCA(object):
                     idx = np.where(self.active_labels==l)
                     plt.scatter(fg[idx,0],fg[idx,1], color=self.colors[i%len(self.colors)], alpha=0.6, label='Class '+str(i))
                 plt.title('Alpha=' + str(alpha_value))
+                plt.xlabel(f"PC1: %var = {round(self.pervar[0], 2)}, raw = {round(self.rawvar[0], 2)}")
+                plt.ylabel(f"PC2: %var = {round(self.pervar[1], 2)}, raw = {round(self.rawvar[1], 2)}")
                 plt.legend()
                 plt.show()
 
@@ -265,9 +301,14 @@ class CPCA(object):
         best_alphas, all_alphas, _, _ = self.find_spectral_alphas(n_alphas, max_log_alpha, n_alphas_to_return)
         best_alphas = np.concatenate(([0], best_alphas)) #one of the alphas is always alpha=0
         data_to_plot = []
+        raw = []
+        per = []
         for alpha in best_alphas:
             transformed_dataset = self.cpca_alpha(dataset=dataset, alpha=alpha)
             data_to_plot.append(transformed_dataset)
+            self.rawvars.append(self.rawvar)
+            self.pervars.append(self.pervar)
+            self.full_pc.append(self.pcs)
         return data_to_plot, best_alphas
 
     """
@@ -281,6 +322,9 @@ class CPCA(object):
         for alpha in alphas:
             transformed_dataset = self.cpca_alpha(dataset=dataset, alpha=alpha)
             data_to_plot.append(transformed_dataset)
+            self.rawvars.append(self.rawvar)
+            self.pervars.append(self.pervar)
+            self.full_pc.append(self.pcs)
         return data_to_plot, alphas
 
     """
@@ -293,6 +337,9 @@ class CPCA(object):
         w, v = LA.eig(sigma)
         eig_idx = np.argpartition(w, -n_components)[-n_components:]
         eig_idx = eig_idx[np.argsort(-w[eig_idx])]
+        self.pcs = -1*np.sort(-w)
+        self.rawvar = w[eig_idx]
+        self.pervar = [i/np.sum(w) for i in self.rawvar]
         v_top = v[:,eig_idx]
         reduced_dataset = dataset.dot(v_top)
         reduced_dataset[:,0] = reduced_dataset[:,0]*np.sign(reduced_dataset[0,0])
