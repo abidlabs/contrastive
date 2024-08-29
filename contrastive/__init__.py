@@ -66,8 +66,8 @@ class CPCA(object):
 
         Parameters: see self.fit() and self.transform() for parameter description
         """
-    def fit_transform(self, foreground, background, plot=False, gui=False, alpha_selection='auto', n_alphas=40,  max_log_alpha=3, n_alphas_to_return=4, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
-        self.fit(foreground, background)
+    def fit_transform(self, foreground, background, preprocess_with_pca_dim=None, plot=False, gui=False, alpha_selection='auto', n_alphas=40,  max_log_alpha=3, n_alphas_to_return=4, active_labels = None, colors=None, legend=None, alpha_value=None, return_alphas=False):
+        self.fit(foreground, background, preprocess_with_pca_dim)
         return self.transform(dataset=self.fg, alpha_selection=alpha_selection,  n_alphas=n_alphas, max_log_alpha=max_log_alpha, n_alphas_to_return=n_alphas_to_return, plot=plot, gui=gui, active_labels=active_labels, colors=colors, legend=legend, alpha_value=alpha_value, return_alphas=return_alphas)
 
         """
